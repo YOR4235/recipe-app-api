@@ -157,6 +157,7 @@ class PrivateRecipeAPITests(TestCase):
         for k, v in payload.items():
             self.assertEqual(getattr(recipe, k), v)
         self.assertEqual(recipe.user, self.user)
+
     def test_update_error(self):
         other_user = create_user(
             email='test2@example.com', password='testpass123')
@@ -168,9 +169,9 @@ class PrivateRecipeAPITests(TestCase):
         }
 
         url = detail_url(recipe.id)
-        res = self.client.patch(url, payload)
+        self.client.patch(url, payload)
         recipe.refresh_from_db()
-        self.assertEqual(recipe.title,payload['title'])
+        self.assertEqual(recipe.title, payload['title'])
         self.assertEqual(recipe.user, self.user)
 
     def test_delete_recipe(self):
