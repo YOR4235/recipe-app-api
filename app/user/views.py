@@ -1,10 +1,12 @@
 from rest_framework import generics, authentication, permissions
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.settings import api_settings
+from core.models import User
 
 from user.serializers import (
     UserSerializer,
     AuthTokenSerializer,
+    PasswordChangeSerializer,
 )
 
 
@@ -24,3 +26,12 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class PasswordChangeViewset(generics.UpdateAPIView):
+    serializer_class = PasswordChangeSerializer
+
+    def get_object(self):
+        email = str(self.kwargs['email'])
+        user = User.objects.get(email=email)
+        return user

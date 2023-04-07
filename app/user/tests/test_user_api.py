@@ -104,6 +104,16 @@ class publicUserApiTests(TestCase):
         self.assertNotIn('token', res.data)
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
+    # def test_change_user_password(self):
+
+    #     user =create_user(email = 'test@example.com', password = 'test123')
+    #     payload = { 'password': 'test12345' }
+
+    #     url = reverse('user:change-password:detail-url', args = [user.email])
+    #     res = self.client.patch(url,payload)
+
+    #     self.assertEqual(res.status_code,status.HTTP_200_OK)
+
     def test_retrieve_user_unauthorized(self):
 
         res = self.client.get(ME_URL)
