@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -5,7 +6,10 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Ingredient
+from core.models import (
+    Ingredient,
+    Recipe,
+)
 
 from recipe.serializers import IngredientSerializer
 
@@ -82,3 +86,47 @@ class PrivateIngredientAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Ingredient.objects.filter(id=ingredient.id).exists())
+
+    def test_filter_assigned_only(self):
+        ingredient1 = Ingredient.objects.create(name='ing1', user=self.user)
+        ingredient2 = Ingredient.objects.create(name='ing2', user=self.user)
+        recipe = Recipe.objects.create(
+            title='recipe1',
+            price=Decimal('5.5'),
+            time_minutes=5,
+            user=self.user,
+        )
+        recipe.ingredients.add(ingredient1)
+
+        payload = {'assigned_only': 1}
+        res = self.client.get(INGREDIENT_URL, payload)
+
+        serializer1 = IngredientSerializer(ingredient1)
+        serializer2 = IngredientSerializer(ingredient2)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(serializer1.data, res.data)
+        self.assertNotIn(serializer2.data, res.data)
+
+    def test_filtered_ingredients_unique(self):
+        ingredient = Ingredient.objects.create(name='ing1', user=self.user)
+        recipe1 = Recipe.objects.create(
+            title='recipe1',
+            price=Decimal('5.5'),
+            time_minutes=5,
+            user=self.user,
+        )
+        recipe2 = Recipe.objects.create(
+            title='recipe2',
+            price=Decimal('5.5'),
+            time_minutes=5,
+            user=self.user,
+        )
+        recipe1.ingredients.add(ingredient)
+        recipe2.ingredients.add(ingredient)
+
+        payload = {'assigned_only': 1}
+        res = self.client.get(INGREDIENT_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)

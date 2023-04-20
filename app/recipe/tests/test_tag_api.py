@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import TestCase
@@ -5,7 +6,10 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Tag
+from core.models import (
+    Tag,
+    Recipe,
+)
 
 from recipe.serializers import TagSerializer
 
@@ -81,3 +85,47 @@ class privateTagsAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Tag.objects.filter(id=tag.id).exists())
+
+    def test_filter_assigned_only(self):
+        tag1 = Tag.objects.create(name='ing1', user=self.user)
+        tag2 = Tag.objects.create(name='ing2', user=self.user)
+        recipe = Recipe.objects.create(
+            title='recipe1',
+            price=Decimal('5.5'),
+            time_minutes=5,
+            user=self.user,
+        )
+        recipe.tags.add(tag1)
+
+        payload = {'assigned_only': 1}
+        res = self.client.get(TAGS_URL, payload)
+
+        serializer1 = TagSerializer(tag1)
+        serializer2 = TagSerializer(tag2)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(serializer1.data, res.data)
+        self.assertNotIn(serializer2.data, res.data)
+
+    def test_filtered_tags_unique(self):
+        tag = Tag.objects.create(name='ing1', user=self.user)
+        recipe1 = Recipe.objects.create(
+            title='recipe1',
+            price=Decimal('5.5'),
+            time_minutes=5,
+            user=self.user,
+        )
+        recipe2 = Recipe.objects.create(
+            title='recipe2',
+            price=Decimal('5.5'),
+            time_minutes=5,
+            user=self.user,
+        )
+        recipe1.tags.add(tag)
+        recipe2.tags.add(tag)
+
+        payload = {'assigned_only': 1}
+        res = self.client.get(TAGS_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
