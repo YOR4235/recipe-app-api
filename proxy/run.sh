@@ -1,4 +1,4 @@
-#!/bib/sh
+#!/bin/sh
 
 set -e
 
